@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Conda environments
+.env
+.env/
+env/
+venv/
+ 
+# Logs and results
+results/
+analysis/
+
+# Model caches
+models/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
