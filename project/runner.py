@@ -7,6 +7,8 @@ from agents import LlamaAgent, AgentTriad
 from dataloader import dataloader
 from logger import ExperimentLogger
 from utils import count_tokens_tiktoken
+from bfi import BFI_QUESTIONS, compute_bfi_scores
+import json
 
 
 # テンプレート読み込み
@@ -43,6 +45,19 @@ class ExperimentRunner:
             for i in range(3)
         ]
         triad = AgentTriad(*agents)
+
+        bfi_results: Dict[str, Dict[str, int]] = {}
+        n_q = len(BFI_QUESTIONS)
+        for ag in agents:
+            raw_scores = [
+                ag.get_bfi_score(q, i + 1, n_q) for i, q in enumerate(BFI_QUESTIONS)
+            ]
+            bfi_results[ag.name] = compute_bfi_scores(raw_scores)
+
+        # チームディレクトリに保存
+        (logger.dir / "bfi_scores.json").write_text(
+            json.dumps(bfi_results, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
         dl = dataloader("mmlu", n_case=self.n_case)
         dl.set_mode("all")

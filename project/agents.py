@@ -115,6 +115,22 @@ class LlamaAgent:
         )
 
         return {"reasoning": reasoning, "answer": answer}
+    def get_bfi_score(self, question: str, idx: int, total: int) -> int:
+        """
+        Big-Five 質問に 1-5 の整数で回答させる。
+        戻り値がパースできない場合は 0 を返す。
+        """
+        prompt = (
+            f"You are currently answering a personality inventory.\n"
+            f"Question {idx}/{total}: {question}\n"
+            "Respond **only** with a single integer between 1 and 5, "
+            "where 1 means 'strongly disagree' and 5 means 'strongly agree'."
+        )
+        resp = self.generate_response(prompt)
+        try:
+            return int(resp["answer"])
+        except Exception:
+            return 0
 
 
 # ---------- AgentTriad (変更なし) ----------

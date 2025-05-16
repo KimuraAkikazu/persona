@@ -27,6 +27,7 @@ class ExperimentLogger:
             self._write_run_config(run_dir)
 
         self.jsonl_path = self.dir / "debate.jsonl"
+        self.jsonl_path.touch(exist_ok=True)  # ここで生成
         self.metrics_path = self.dir / "metrics.csv"
         self._init_metrics_csv()
 
