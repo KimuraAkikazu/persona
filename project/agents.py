@@ -79,7 +79,7 @@ class LlamaAgent:
 
     # ---- public API ----
     def reset_history(self) -> None:
-        self.conversation_history = deque([self.system_turn], maxlen=10)
+        self.conversation_history = deque([self.system_turn], maxlen=50)
 
     def generate_response(self, user_prompt: str) -> dict:
         """ユーザ入力を追加し、LLM から assistant 応答を取得して返す"""
@@ -121,7 +121,7 @@ class LlamaAgent:
         戻り値がパースできない場合は 0 を返す。
         """
         prompt = (
-            f"You are currently answering a personality inventory.\n"
+            f"***Remember your personality traits***: {self.personality_text}\n"
             f"Question {idx}/{total}: {question}\n"
             "Respond **only** with a single integer between 1 and 5, "
             "where 1 means 'strongly disagree' and 5 means 'strongly agree'."

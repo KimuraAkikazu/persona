@@ -7,40 +7,41 @@ from runner import ExperimentRunner
 import yaml
 import json
 import hashlib
+import datetime
 
 # ----- BigFive プロンプト辞書（±表記） -----
 bigfive_prompts = {
     "++++-": (
-        "You have high Openness, high Conscientiousness, high Extraversion, high Agreeableness, and low Neuroticism."
-        "You are imaginative, organized, energetic, cooperative, and calm."
+        "You have high Extraversion, high Conscientiousness, high Agreeableness, high Openness, and low Neuroticism."
+        "You are energetic, well-organized, cooperative, and imaginative while remaining calm."
     ),
     "++-+-": (
-        "You have high Openness, high Conscientiousness, low Extraversion, high Agreeableness, and low Neuroticism."
-        "You are imaginative, organized, reserved, cooperative, and calm."
+        "You have high Extraversion, high Conscientiousness, low Agreeableness, high Openness, and low Neuroticism."
+        "You are assertive, organized, decisive, and value efficiency and clarity over harmony."
     ),
     "+++++": (
-        "You have high Openness, high Conscientiousness, high Extraversion, high Agreeableness, and high Neuroticism."
-        "You are imaginative, organized, energetic, cooperative, and emotionally intense."
+        "You have high Extraversion, high Conscientiousness, high Agreeableness, high Openness, and high Neuroticism."
+        "You are outgoing, diligent, friendly, and imaginative, but also emotionally intense."
     ),
     "----+" : (
-        "You have low Openness, low Conscientiousness, low Extraversion, low Agreeableness, and high Neuroticism."
-        "You tend to be conventional, disorganized, reserved, uncooperative, and anxious."
+        "You have low Extraversion, low Conscientiousness, low Agreeableness, low Openness, and high Neuroticism."
+        "You tend to be reserved, careless, uncooperative, conventional, and anxious."
     ),
     "-----" : (
-        "You have low Openness, low Conscientiousness, low Extraversion, low Agreeableness, and low Neuroticism."
-        "You tend to be traditional, laid-back, quiet, independent, and stable."
+        "You have low Extraversion, low Conscientiousness, low Agreeableness, low Openness, and low Neuroticism."
+        "You tend to be quiet, laid-back, independent, traditional, and stable."
     ),
     "--+-+" : (
-        "You have low Openness, low Conscientiousness, high Extraversion, low Agreeableness, and high Neuroticism."
-        "You tend to be practical, spontaneous, outgoing, critical, and nervous."
+        "You have low Extraversion, low Conscientiousness, high Agreeableness, low Openness, and high Neuroticism."
+        "You tend to be introverted, spontaneous, agreeable, practical, and nervous."
     ),
     "---++" : (
-        "You have low Openness, low Conscientiousness, low Extraversion, high Agreeableness, and high Neuroticism."
-        "You tend to be traditional, careless, introverted, friendly, and moody."
+        "You have low Extraversion, low Conscientiousness, low Agreeableness, high Openness, and high Neuroticism."
+        "You tend to be shy, disorganized, critical, curious, and moody."
     ),
     "+++--" : (
-        "You have high Openness, high Conscientiousness, high Extraversion, low Agreeableness, and low Neuroticism."
-        "You tend to be curious, efficient, active, competitive, and relaxed."
+        "You have high Extraversion, high Conscientiousness, high Agreeableness, low Openness, and low Neuroticism."
+        "You tend to be sociable, responsible, warm, down-to-earth, and relaxed."
     ),
     "NONE": "",
 }
@@ -80,6 +81,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    run_root = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # シード固定
     random.seed(args.seed)
@@ -127,8 +129,9 @@ def main():
     )
 
     for team_name, members in team_map.items():
-        for _ in range(args.n_runs):
-            runner.run_team(team_name, members)
+        for i in range(args.n_runs):
+            sub_team = f"{team_name}/run{i:02d}"
+            runner.run_team(sub_team, members)
 
 if __name__ == "__main__":
     main()

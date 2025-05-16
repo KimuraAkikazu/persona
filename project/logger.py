@@ -10,10 +10,10 @@ from typing import Dict, Any
 
 
 class ExperimentLogger:
-    def __init__(
-        self, team: str, seed: int, model_path: str, base_dir: Path = Path("results")
-    ) -> None:
-        self.run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    def __init__(self, team: str, seed: int, model_path: str,
+                 run_id: str,                 # ★ 追加
+                 base_dir: Path = Path("results")) -> None:
+        self.run_id = run_id
         self.team = team
         self.seed = seed
         self.model_path = model_path

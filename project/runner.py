@@ -9,6 +9,7 @@ from logger import ExperimentLogger
 from utils import count_tokens_tiktoken
 from bfi import BFI_QUESTIONS, compute_bfi_scores
 import json
+import pandas as _pd
 
 
 # テンプレート読み込み
@@ -28,6 +29,7 @@ class ExperimentRunner:
         n_case: int,
         seed: int,
         model_path: str,
+        run_id: str
     ):
         self.llama = llama
         self.prompts = bigfive_prompts
@@ -37,7 +39,7 @@ class ExperimentRunner:
 
     def run_team(self, team_name: str, personalities: List[str]) -> None:
         logger = ExperimentLogger(
-            team=team_name, seed=self.seed, model_path=self.model_path
+            team=team_name, seed=self.seed, model_path=self.model_path,run_id=self.run_id
         )
 
         agents = [
@@ -133,3 +135,12 @@ class ExperimentRunner:
                     "total_tokens": total_tok,
                 }
             )
+
+            # --- Run 終了時 Accuracy 集計 ---
+        met = _pd.read_csv(logger.metrics_path)
+        acc = met["correct"].mean()
+        (logger.dir / "run_summary.json").write_text(
+            json.dumps({"accuracy": acc,
+                        "n_case": len(met),
+                        "team": team_name}, indent=2),
+            encoding="utf-8")
