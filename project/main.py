@@ -126,6 +126,7 @@ def main():
         n_case=args.n_case,
         seed=args.seed,
         model_path=model_path,
+        run_id=run_root,
     )
 
     for team_name, members in team_map.items():

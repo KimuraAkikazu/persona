@@ -36,6 +36,7 @@ class ExperimentRunner:
         self.n_case = n_case
         self.seed = seed
         self.model_path = model_path
+        self.run_id = run_id
 
     def run_team(self, team_name: str, personalities: List[str]) -> None:
         logger = ExperimentLogger(
