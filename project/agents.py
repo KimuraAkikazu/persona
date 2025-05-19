@@ -75,11 +75,12 @@ class LlamaAgent:
         # deque で履歴管理
         self.conversation_history: Deque[ChatTurn] = deque(
             [self.system_turn], maxlen=10
+
         )
 
     # ---- public API ----
     def reset_history(self) -> None:
-        self.conversation_history = deque([self.system_turn], maxlen=50)
+        self.conversation_history = deque([self.system_turn], maxlen=12)
 
     def generate_response(self, user_prompt: str) -> dict:
         """ユーザ入力を追加し、LLM から assistant 応答を取得して返す"""
@@ -94,7 +95,7 @@ class LlamaAgent:
                 messages,
                 max_tokens=self.max_tokens,
                 temperature=0.7,
-                top_p=0.9,
+                top_p=0.8,
                 stop=["System:", "User:"],
                 seed=-1,
             )

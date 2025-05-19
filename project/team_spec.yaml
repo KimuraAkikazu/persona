@@ -1,9 +1,9 @@
 teams:
   Team"Mixed":
     members: ["++++-", "++-+-", "+--+-"]
-  # TeamNone:
-  #   members: ["NONE", "NONE", "NONE"]
-  # Team"++++-":
-  #   members: ["++++-", "++++-", "++++-"]
-  # Team"---++":
-  #   members: ["---++", "---++", "---++"]  
+  TeamNone:
+     members: ["NONE", "NONE", "NONE"]
+  Team"++++-":
+    members: ["++++-", "++++-", "++++-"]
+  Team"----+":
+     members: ["----+", "----+", "----+"]  
