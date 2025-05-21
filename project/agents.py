@@ -1,16 +1,33 @@
-# agents.py  (T3: ChatTurn + deque(maxlen=10))
+# project/agents.py
+# ------------------------------------------------------------
+# 変更点だけでなく **ファイル全体** を貼っています。コピペで上書き可
+# ------------------------------------------------------------
 import sys
 import contextlib
+import json
+import re
 from enum import Enum
 from collections import deque
-from typing import Deque, Literal  # List は未使用のため削除
-
+from typing import Deque, Literal, Optional
 
 from pydantic import BaseModel
 from llama_cpp import Llama
 
+# ===== JSON schema (MMLU 用) =================================
+DEBATE_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "reasoning": {"type": "string"},
+        "answer":  {
+            "type": "string",
+            "enum": ["A", "B", "C", "D"],
+        },
+    },
+    "required": ["reasoning", "answer"],
+}
+# =============================================================
 
-# ---------- 型定義 ----------
+
 class ChatTurn(BaseModel):
     role: Literal["system", "user", "assistant"]
     content: str
@@ -24,35 +41,36 @@ class OutputFormat(Enum):
 @contextlib.contextmanager
 def suppress_stdout_stderr():
     with open("/dev/null", "w") as devnull:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = devnull
-        sys.stderr = devnull
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = devnull, devnull
         try:
             yield
         finally:
-            sys.stdout = old_stdout
-            sys.stderr = old_stderr
+            sys.stdout, sys.stderr = old_out, old_err
 
 
-def filter_repetitions(text: str, max_length: int = 200) -> str:
-    lines = text.splitlines()
-    filtered = [
-        ln for ln in lines if not (len(ln) > max_length and "response is" in ln)
-    ]
-    return "\n".join(filtered)
+def _clean_json_block(text: str) -> str:
+    """```json ...``` などを削って最初の {...} を返す"""
+    text = re.sub(r"```.*?```", "", text, flags=re.S)
+    m = re.search(r"\{.*\}", text, flags=re.S)
+    return m.group(0) if m else text
 
 
-# ---------- LlamaAgent ----------
+# ==================  LlamaAgent ==============================
 class LlamaAgent:
     """
-    各エージェントは ChatTurn(BaseModel) で履歴を保持する。
-    deque(maxlen=10) により古い発話は自動でドロップされる。
+    persona を持つ 1 エージェント。
+    * 1 問ごとに `reset_history()` が呼ばれる想定
+    * deque(maxlen=12) で履歴を短く保持
     """
 
     def __init__(
-        self, name: str, personality_text: str, model: Llama, max_tokens: int = 512
-    ) -> None:
+        self,
+        name: str,
+        personality_text: str,
+        model: Llama,
+        max_tokens: int = 512,
+    ):
         self.name = name
         self.personality_text = personality_text
         self.model = model
@@ -60,102 +78,104 @@ class LlamaAgent:
 
         sys_msg = (
             f"You are {self.name}."
-            if personality_text == ""
+            if not personality_text
             else (
-                f"You are {self.name} with the following personality traits:\n"  # 長い行を改行
-                f"{personality_text}\n"
-                "Answer concisely and strictly adhere to these traits. "  # 長い行を改行
-                "Ensure your reasoning reflects your personality. "
-                "When answering multiple‑choice questions, output JSON with "  # 長い行を改行
-                'keys "reasoning" and "answer".'
+                f"Your personality traits:\n{personality_text}\n"
+                "Answer concisely and stay consistent with them."
             )
         )
         self.system_turn = ChatTurn(role="system", content=sys_msg)
 
-        # deque で履歴管理
+        # ── 会話履歴 ───────────────────────────────
         self.conversation_history: Deque[ChatTurn] = deque(
-            [self.system_turn], maxlen=10
-
+            [self.system_turn], maxlen=12
         )
 
-    # ---- public API ----
-    def reset_history(self) -> None:
+    # ---------------------------------------------------------
+    # public
+    # ---------------------------------------------------------
+    def reset_history(self):
         self.conversation_history = deque([self.system_turn], maxlen=12)
 
-    def generate_response(self, user_prompt: str) -> dict:
-        """ユーザ入力を追加し、LLM から assistant 応答を取得して返す"""
-        self.conversation_history.append(
-            ChatTurn(role="user", content=user_prompt)  # 長い行を改行
-        )
+    def generate_response(
+        self,
+        user_prompt: str,
+        *,
+        enforce_json: bool = True,           # True=MMLU / False=BFI
+        max_tokens: Optional[int] = None,
+    ) -> dict:
+        """LLM 呼び出し & 結果を dict で返す"""
+        self.conversation_history.append(ChatTurn(role="user", content=user_prompt))
 
-        messages = [turn.model_dump() for turn in self.conversation_history]
+        messages = [t.model_dump() for t in self.conversation_history]
+        kwargs = dict(
+            messages=messages,
+            max_tokens=max_tokens or self.max_tokens,
+            temperature=0.7,
+            top_p=0.9,
+            seed=-1,
+        )
+        if enforce_json:
+            kwargs["response_format"] = {
+                "type": "json_object",
+                "schema": DEBATE_RESPONSE_SCHEMA,
+            }
 
         with suppress_stdout_stderr():
-            output = self.model.create_chat_completion(  # 長い行を改行
-                messages,
-                max_tokens=self.max_tokens,
-                temperature=0.7,
-                top_p=0.8,
-                stop=["System:", "User:"],
-                seed=-1,
-            )
+            out = self.model.create_chat_completion(**kwargs)
 
-        raw_text = output["choices"][0]["message"]["content"].strip()
-        try:
-            json_resp = (
-                eval(raw_text) if raw_text.startswith("{") else {}  # 長い行を改行
-            )
-        except Exception:  # fallback
-            json_resp = {}
+        raw = (out["choices"][0]["message"]["content"] or "").strip()
 
-        reasoning = json_resp.get("reasoning", "")
-        answer = json_resp.get("answer", raw_text)
+        reasoning, answer = "", raw  # デフォルト
 
-        self.conversation_history.append(
-            ChatTurn(role="assistant", content=raw_text)  # 長い行を改行
-        )
+        if enforce_json:
+            # ---------------- JSON パース -----------------
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                try:
+                    data = json.loads(_clean_json_block(raw))
+                except Exception:
+                    data = {}
+            reasoning = data.get("reasoning", "")
+            answer = data.get("answer", answer)
+
+        # 履歴追加
+        self.conversation_history.append(ChatTurn(role="assistant", content=raw))
 
         return {"reasoning": reasoning, "answer": answer}
+
+    # ---------------------------------------------------------
+    # BFI helper
+    # ---------------------------------------------------------
     def get_bfi_score(self, question: str, idx: int, total: int) -> int:
-        """
-        Big-Five 質問に 1-5 の整数で回答させる。
-        戻り値がパースできない場合は 0 を返す。
-        """
         prompt = (
             f"***Remember your personality traits***: {self.personality_text}\n"
             f"Question {idx}/{total}: {question}\n"
-            "Respond **only** with a single integer between 1 and 5, "
-            "where 1 means 'strongly disagree' and 5 means 'strongly agree'."
+            "Respond ONLY with an integer 1-5 "
+            "(1 = strongly disagree, 5 = strongly agree)."
         )
-        resp = self.generate_response(prompt)
+        resp = self.generate_response(prompt, enforce_json=False)
         try:
             return int(resp["answer"])
         except Exception:
             return 0
 
 
-# ---------- AgentTriad (変更なし) ----------
+# ==================  AgentTriad ※変更なし ===================
 class AgentTriad:
-    """
-    3体のエージェントによるディベートを管理するクラス。
-    """
-
     def __init__(self, agentX: LlamaAgent, agentY: LlamaAgent, agentZ: LlamaAgent):
         self.agents = [agentX, agentY, agentZ]
         self.round_responses = {}
 
-    def conduct_discussion(self, topic_prompt, max_turns=3):
-        # 省略: Runner 側で実装するため未使用
-        pass
+    def conduct_discussion(self, topic_prompt, max_turns: int = 3):
+        pass  # Runner 側で実装
 
-    def get_final_consensus(self):
+    def get_final_consensus(self) -> str:
         final_round = self.round_responses.get(max(self.round_responses.keys()), {})
-        extracted = {}
-        for agent_name, resp in final_round.items():
-            ans = resp.get("answer", "") if isinstance(resp, dict) else ""
-            extracted[agent_name] = str(ans).strip() or "N/A"
+        extracted = {a: r.get("answer", "") for a, r in final_round.items()}
         votes = {}
         for v in extracted.values():
-            if v != "N/A":
+            if v:
                 votes[v] = votes.get(v, 0) + 1
         return max(votes, key=votes.get) if votes else "N/A"

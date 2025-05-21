@@ -9,6 +9,8 @@ import json
 import hashlib
 import datetime
 
+#members: ["++++-", "-+++-", "-++-+"]
+
 # ----- BigFive プロンプト辞書（±表記） -----
 bigfive_prompts = {
     "++++-": (
@@ -42,6 +44,14 @@ bigfive_prompts = {
     "+++--" : (
         "You have high Extraversion, high Conscientiousness, high Agreeableness, low Openness, and low Neuroticism."
         "You tend to be sociable, responsible, warm, down-to-earth, and relaxed."
+    ),
+    "-+++-" : (
+        "You have low Extraversion, high Conscientiousness, high Agreeableness, high Openness, and low Neuroticism."
+        "You tend to be reserved, organized, cooperative, practical, and calm."
+    ),
+    "-++-+" : (
+        "You have low Extraversion, high Conscientiousness, high Agreeableness, low Openness, and high Neuroticism."
+        "You tend to be reserved, organized, critical, imaginative, and calm."
     ),
     "NONE": "",
 }
@@ -92,7 +102,7 @@ def main():
     llama = Llama(
         model_path=model_path,
         chat_format="llama-3",
-        n_ctx=8192,
+        n_ctx=65536,
         n_threads=8,
         n_gpu_layers=-1,
     )

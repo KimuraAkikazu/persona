@@ -12,6 +12,9 @@ import json
 import pandas as _pd
 
 
+
+
+
 # テンプレート読み込み
 def _load_tpl(name: str) -> Template:
     return Template((Path("templates") / name).read_text(encoding="utf-8"))
@@ -80,7 +83,7 @@ class ExperimentRunner:
 
             triad.round_responses = {1: {}}
             for ag in agents:
-                resp = ag.generate_response(prompt_r1)
+                resp = ag.generate_response(prompt_r1, enforce_json=True)
                 triad.round_responses[1][ag.name] = resp
                 logger.log_turn(
                     {
@@ -104,9 +107,9 @@ class ExperimentRunner:
                         if x.name != ag.name
                     ]
                     prompt_rn = _TPL_RN.render(
-                        turn=turn, other1=other[0], other2=other[1]
+                        turn=turn, other1=other[0], other2=other[1],personality=ag.personality_text
                     )
-                    resp = ag.generate_response(prompt_rn)
+                    resp = ag.generate_response(prompt_rn, enforce_json=True)
                     triad.round_responses[turn][ag.name] = resp
                     logger.log_turn(
                         {
