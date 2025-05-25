@@ -9,7 +9,7 @@ import re
 from enum import Enum
 from collections import deque
 from typing import Deque, Literal, Optional
-
+from pathlib import Path
 from pydantic import BaseModel
 from llama_cpp import Llama
 
@@ -88,14 +88,14 @@ class LlamaAgent:
 
         # ── 会話履歴 ───────────────────────────────
         self.conversation_history: Deque[ChatTurn] = deque(
-            [self.system_turn], maxlen=12
+            [self.system_turn], maxlen=20
         )
 
     # ---------------------------------------------------------
     # public
     # ---------------------------------------------------------
     def reset_history(self):
-        self.conversation_history = deque([self.system_turn], maxlen=12)
+        self.conversation_history = deque([self.system_turn], maxlen=20)
 
     def generate_response(
         self,
@@ -108,6 +108,11 @@ class LlamaAgent:
         self.conversation_history.append(ChatTurn(role="user", content=user_prompt))
 
         messages = [t.model_dump() for t in self.conversation_history]
+        if enforce_json:
+            # 保存するファイルパス（同じフォルダ内）
+            file_path = Path(__file__).parent / "chat_log.json"
+            # ファイルを作成して内容を書き込み
+            file_path.write_text(json.dumps(messages, ensure_ascii=False, indent=2), encoding="utf-8")
         kwargs = dict(
             messages=messages,
             max_tokens=max_tokens or self.max_tokens,
