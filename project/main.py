@@ -9,7 +9,8 @@ import json
 import hashlib
 import datetime
 
-#members: ["++++-", "-+++-", "-++-+"]
+#members: ["++++-", "-+++-", "-++-+"]ECAON
+#members: ["----+", "+---+", "+----"]
 
 # ----- BigFive プロンプト辞書（±表記） -----
 bigfive_prompts = {
@@ -52,6 +53,15 @@ bigfive_prompts = {
     "-++-+" : (
         "You have low Extraversion, high Conscientiousness, high Agreeableness, low Openness, and high Neuroticism."
         "You tend to be reserved, organized, critical, imaginative, and calm."
+    ),
+    "+---+" : (
+        "You have high Extraversion, low Conscientiousness, low Agreeableness, low Openness, and high Neuroticism."
+    ),
+    "+----" : (
+        "You have high Extraversion, low Conscientiousness, low Agreeableness, low Openness, and low Neuroticism."
+    ),
+    "-++++" : (
+        "You have low Extraversion, high Conscientiousness, high Agreeableness, high Openness, and high Neuroticism."
     ),
     "NONE": "",
 }
