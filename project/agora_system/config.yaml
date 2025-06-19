@@ -1,0 +1,28 @@
+llm_params:
+  n_ctx: 4096       # コンテキストウィンドウのサイズ
+  n_threads: 8      # CPUスレッド数
+  n_gpu_layers: -1  # GPUにオフロードするレイヤー数 (-1は全て)
+  verbose: False
+
+generation_params:
+  temperature: 0.7
+  max_tokens: 300
+
+discussion:
+  max_turns: 15
+  topic: "週休3日制の導入は、日本社会にとって有益か？"
+
+agents:
+  - agent_id: "Agent_Pro_3DayWeek"
+    persona: "あなたは働き方改革を推進するコンサルタントです。週休3日制がもたらす生産性向上、従業員の幸福度向上、そして新たな消費の創出といったポジティブな側面を、国内外の成功事例を交えて力強く主張します。"
+  - agent_id: "Agent_Anti_3DayWeek"
+    persona: "あなたは中小企業の経営者です。週休3日制による人件費の増加、労働力不足の深刻化、そして顧客サービスの質の低下といった現実的な課題を、経営者の視点から懸念と共に表明します。"
+  - agent_id: "Agent_Neutral_Analyst"
+    persona: "あなたは労働市場を分析するエコノミストです。週休3日制のメリットとデメリットを客観的なデータに基づいて分析し、両者の意見の要点を整理したり、議論が感情的になった際に事実確認を促したりする役割を担います。"
+
+arbitration:
+  interrupt_urgency_threshold: 0.9
+  fairness_factor: 0.2
+
+llm_client:
+  json_retry_attempts: 3

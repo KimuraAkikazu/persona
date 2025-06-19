@@ -80,7 +80,7 @@ class LlamaAgent:
             f"You are {self.name}."
             if not personality_text
             else (
-                f"Your personality traits:\n{personality_text}\n"
+                f"Imagine you are an AI agent designed with specific personality traits based on the Big Five Personality Model. Your behavior, communication style, and decision-making are shaped by the following traits :\n{personality_text}\n"
                 "Answer concisely and stay consistent with them."
             )
         )
@@ -116,9 +116,9 @@ class LlamaAgent:
         kwargs = dict(
             messages=messages,
             max_tokens=max_tokens or self.max_tokens,
-            temperature=0.7,
+            temperature=0.3,
             top_p=0.9,
-            seed=-1,
+            seed=-1, 
         )
         if enforce_json:
             kwargs["response_format"] = {

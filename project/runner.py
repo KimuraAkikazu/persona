@@ -70,10 +70,11 @@ class ExperimentRunner:
 
         for idx in range(len(dl)):
             item = dl[idx]
-            q_text = item["task_info"][0]
-            opts = item["task_info"][1:]
-            question_text = f"Question: {q_text}\n" + "\n".join(
-                f"{chr(65+i)}. {opt}" for i, opt in enumerate(opts)
+            # --- after ---
+            q_text, *opts = item["task_info"]          # タスク情報を展開
+            question_text = (
+                f"Question {idx + 1}:\n{q_text}\n"     # 見出し
+                + "\n".join(f"{chr(65+i)}. {opt}" for i, opt in enumerate(opts))
             )
 
             # --- Round 1 ---
@@ -97,31 +98,31 @@ class ExperimentRunner:
                     }
                 )
 
-            # --- Round 2 & 3 ---
-            for turn in (2, 3):
-                triad.round_responses[turn] = {}
-                for ag in agents:
-                    other = [
-                        triad.round_responses[turn - 1][x.name]
-                        for x in agents
-                        if x.name != ag.name
-                    ]
-                    prompt_rn = _TPL_RN.render(
-                        turn=turn, other1=other[0], other2=other[1],personality=ag.personality_text
-                    )
-                    resp = ag.generate_response(prompt_rn, enforce_json=True)
-                    triad.round_responses[turn][ag.name] = resp
-                    logger.log_turn(
-                        {
-                            "q_id": idx + 1,
-                            "turn": turn,
-                            "agent": ag.name,
-                            **resp,
-                            "tokens": count_tokens_tiktoken(
-                                str(resp["reasoning"]) + str(resp["answer"])
-                            ),
-                        }
-                    )
+            # # --- Round 2 & 3 ---
+            # for turn in (2, 3):
+            #     triad.round_responses[turn] = {}
+            #     for ag in agents:
+            #         other = [
+            #             triad.round_responses[turn - 1][x.name]
+            #             for x in agents
+            #             if x.name != ag.name
+            #         ]
+            #         prompt_rn = _TPL_RN.render(
+            #             turn=turn, other1=other[0], other2=other[1],personality=ag.personality_text
+            #         )
+            #         resp = ag.generate_response(prompt_rn, enforce_json=True)
+            #         triad.round_responses[turn][ag.name] = resp
+            #         logger.log_turn(
+            #             {
+            #                 "q_id": idx + 1,
+            #                 "turn": turn,
+            #                 "agent": ag.name,
+            #                 **resp,
+            #                 "tokens": count_tokens_tiktoken(
+            #                     str(resp["reasoning"]) + str(resp["answer"])
+            #                 ),
+            #             }
+            #         )
 
             # --- Consensus & Metrics ---
             final_ans = triad.get_final_consensus()

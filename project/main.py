@@ -112,7 +112,7 @@ def main():
     llama = Llama(
         model_path=model_path,
         chat_format="llama-3",
-        n_ctx=65536,
+        n_ctx=16384,
         n_threads=8,
         n_gpu_layers=-1,
     )
